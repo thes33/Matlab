@@ -14,6 +14,8 @@ function [NB] = createNoiseBurst(fs, dur, varargin);
 %           filter using the given upper and lower cutoffs. Set Cutoff to
 %           -1 to ignore cutoff, ex: [3 -1 3000] for a 3rd order low-pass
 %           filtered noise at 3 kHz.
+%       'ramp', N (num) - Ramp the noise on/off for the given msec duration with cos2 ramps.
+%           Ramps applied after RMS, so final RMS is likely under due to amplitude ramping.
 %
 %   OUTPUT:
 %       NB - Noise burst waveform.
@@ -22,6 +24,8 @@ function [NB] = createNoiseBurst(fs, dur, varargin);
 
 % Changelog:
 %   Dec 19, 2018 - Added pink noise support.
+%   Mar 15, 2021 - Added cos2 ramping option.
+%   Nov 10, 2021 - Better messaging concerning RMS and max.
 
 
 % INPUT PARAMETERS
@@ -34,6 +38,7 @@ RMS = false;
 MAX = false;
 TYPE = 'w';
 BANDPASS = false;
+RAMP = 0;
 
 if nargin >= 3
     for ii = 1:nargin-2
@@ -60,6 +65,10 @@ if nargin >= 3
                 lower = band(2);
                 upper = band(3);
                 BANDPASS = true;
+            end
+            % RAMP DURATION
+            if strcmpi(S,'ramp')
+                RAMP = varargin{ii+1};
             end
         end
     end
@@ -141,28 +150,54 @@ end
 %============================================
 if (MAX && ~RMS)
     if (max(abs(NB)) > maxValue)
+        preRMS = sqrt(mean(NB.^2));;
         Q = max(abs(NB)) / maxValue;
-        NB = NB / Q;
+        NB = NB / Q;     
+        postRMS = sqrt(mean(NB.^2));;  
+        disp(['   RMS level [' num2str(preRMS) '] adjusted [' num2str(postRMS) '] to limit peaks.']); 
     end
 end
 
 
 % APPLY RMS VALUE LIMITS
 %============================================
-if (RMS)    
+if (RMS)
     rmsNB = sqrt(mean(NB.^2));
     Q = rmsNB / rmsValue;
     NB = NB / Q;
     
-    if (MAX)
+    if (MAX) % Truncate maximums
+        % Pos
         idx = find(NB >= maxValue);
+        posNum = length(idx);
         NB(idx) = maxValue;
+        % Neg
         idx = find(NB <= -maxValue);
+        negNum = length(idx);
         NB(idx) = -maxValue;
+        
+        truncSamps = posNum + negNum;
+        if (truncSamps > 0) disp(['   ' num2str(truncSamps) ' / ' num2str(length(NB)) ' samples truncated to max value.']); end
     end
 end
 
 
+% APPLY COS2 RAMPS
+%============================================
+if (RAMP > 0)
+    % Get sample lengths
+    sampRamp = round(RAMP*(fs/1000));
+    % Create the ramps
+    onsetRamp = ((sin(pi*(3/2):pi/(sampRamp-1):pi*(5/2))+1)/2).^2;
+    offsetRamp = fliplr((sin(pi*(3/2):pi/(sampRamp-1):pi*(5/2))+1)/2).^2;
+    % Create the full-scale middle portion
+    middle = ones(1, length(NB)-(length(onsetRamp)+length(offsetRamp)));
+    % Create final gain curve
+    gains = [onsetRamp, middle, offsetRamp];
+    % Apply the gain
+    NB = gains' .* NB;
+    
+end
 
 
 

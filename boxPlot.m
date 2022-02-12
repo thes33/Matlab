@@ -14,6 +14,8 @@ function [STATS] = boxPlot(X, Y, varargin);
 %        'nobox' = Does not plot interquartile range box.
 %        'noci' = Does not plot 95% confidence intervals.
 %        'iqr' = Plots the extra-interquartile range box (1.5 x IQR) for outlier detection.
+%        'nomedian' = Does not plot median thin line. 
+%        'norange' =  Does not plot range lines (min/max)
 %        'outliers' = Ignores outliers (includes them in statistics).
 %            Outliers defined as outside 1.5 x interquartile range.
 %
@@ -40,6 +42,7 @@ function [STATS] = boxPlot(X, Y, varargin);
 %   1.2 - Mar 8,2019 - Added support for data point labels.
 %   1.2.1 - Mar 20,2019 - Fixed issue with labels and multiple columns.
 %   1.2.2 - May 9,2019 - Fixed issue with points and labels.
+%   1.2.3 - Jun 17,2019 - Fixed issue single set labels.
 %
 
 
@@ -53,8 +56,10 @@ IND_POINTS = false;
 DATA_LABELS = {};
 IGNORE_OUTLIERS = false;
 PLOT_IQR = false;
+PLOT_MEDIAN = true;
 BOX = true;
 SHOW_CI = true;
+PLOT_RANGE = true;
 
 % Error control
 if nargin < 2
@@ -103,6 +108,14 @@ if nargin > 2
             % IQR
             if (strcmp(Q,'iqr'))
                 PLOT_IQR = true;
+            end
+            % No Median Line
+            if (strcmp(Q,'nomedian'))
+                PLOT_MEDIAN = false;
+            end
+            % No Range (Min/Max)
+            if (strcmp(Q,'norange'))
+                PLOT_RANGE = false;
             end
         end
     end
@@ -160,7 +173,9 @@ for (dd = 1:size(Y,2))
         if (isempty(normdata{dd}))
             normdata(dd) = {1:length(Y(:,dd))};
             warning(['Column ' num2str(dd) ' is not a distributive data set.']);
-            NORM_LABELS(dd) = {DATA_LABELS(1:length(Y(:,dd)))};
+            if (~isempty(DATA_LABELS))
+                NORM_LABELS(dd) = {DATA_LABELS(1:length(Y(:,dd)))};
+            end
         end
         
         % IGNORING OUTLIERS
@@ -219,15 +234,18 @@ hold on;
 % FOR each column of data
 for (dd = 1:size(Y,2))
     
-    % Center Line
-    %----------------------
-    line([X(dd) X(dd)], [MIN(dd) MAX(dd)], 'Color','k');
     
-    % Min/Max Lines
-    %----------------------
-    w = 0.65 * width/2; % 5% max width
-    line([X(dd)-w X(dd)+w], [MIN(dd) MIN(dd)], 'Color','k');
-    line([X(dd)-w X(dd)+w], [MAX(dd) MAX(dd)], 'Color','k');
+    if (PLOT_RANGE)
+        % Center Line
+        %----------------------
+        line([X(dd) X(dd)], [MIN(dd) MAX(dd)], 'Color','k');
+        
+        % Min/Max Lines
+        %----------------------
+        w = 0.65 * width/2; % 5% max width
+        line([X(dd)-w X(dd)+w], [MIN(dd) MIN(dd)], 'Color','k');
+        line([X(dd)-w X(dd)+w], [MAX(dd) MAX(dd)], 'Color','k');
+    end
     
     % Interquartile Box
     %----------------------
@@ -246,8 +264,10 @@ for (dd = 1:size(Y,2))
     
     % Median Line
     %----------------------
-    w = width/2;
-    line([X(dd)-w X(dd)+w], [MED(dd) MED(dd)], 'Color','k');
+    if (PLOT_MEDIAN)
+        w = width/2;
+        line([X(dd)-w X(dd)+w], [MED(dd) MED(dd)], 'Color','k');
+    end
     
     
     % 95% Condifence Interval Bars

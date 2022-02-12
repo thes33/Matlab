@@ -15,12 +15,16 @@ function [output] = freqConvolve(input, impulse);
 %  @Author: Eugene Brandewie
 %--------------------------------------------------
 %  @Version: 1.0 - (9/19/2013)
+%  @Version: 1.1 - (3/28/2018) 
+%     - Fixed multi-channel impulse responses.
+%     - Added output matrix preallocation.
 
 
 if (size(input,2) > 1)
     error('Input signal must be columnar.');
 end
 
+output = zeros(length(input) + size(impulse,1) -1, size(impulse,2));
 for (cc = 1:size(impulse,2))
     
     % Calculate final length
@@ -44,6 +48,8 @@ for (cc = 1:size(impulse,2))
     % Return only the proper matrix length
     output(:,cc) = outputT(1:fLength);
 end
+
+
 
 
 

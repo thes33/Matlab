@@ -100,7 +100,7 @@ if (bins > size(Y,1))
     warning(['Bins reduced to sample size (' num2str(size(Y,1)) ')']);
 end
 % Ensure color values for each data column
-if (length(color) < size(Y,2) || length(color < 2))
+if (length(color) < size(Y,2) || length(color) < 2)
     C = color;
     color = {};
     for (ii=1:size(Y,2))

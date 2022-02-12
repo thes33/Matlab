@@ -1,5 +1,5 @@
-function [newWave] = normRMS(waveform, rmsLevel, START, END);
-%function [newWave] = normRMS(waveform, rmsLevel, START, END);
+function [newWave, Q] = normRMS(waveform, rmsLevel, START, END);
+%function [newWave, Q] = normRMS(waveform, rmsLevel, START, END);
 %
 % Normalizes a waveform [columnar] to have the specified RMS amplitude.
 % Can also specify the start and end point that is used for normalization 
@@ -18,6 +18,7 @@ function [newWave] = normRMS(waveform, rmsLevel, START, END);
 %
 % OUTPUTS:
 %    newWave = the new scaled waveform
+%    Q (optional) = the scaling factor for use on additional waveforms
 %
 % Eugene Brandewie 01/22/2014
 
